@@ -136,7 +136,7 @@ class SubscriptionManager
             ['key' => 'Link', 'value' => "<$this->hubUrl>; rel=\"mercure\""]
         ];
         foreach ($topics as $topic){
-            if(!is_object($topic) || !isset($topic->name)){
+            if(!$topic instanceof \Jguillaumesio\PhpMercureHub\Models\Topic){
                 continue;
             }
             if($includeSelf){

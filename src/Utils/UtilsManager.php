@@ -17,7 +17,7 @@ use Jguillaumesio\PhpMercureHub\Config;
  * @method static array  getCookies()
  * @method static array  getRequestBody()
  * @method static array  getAvailableResponseTypes()
- * @method static mixed  generateResponse(string $topic, array $request)
+ * @method static string generateResponse(\Jguillaumesio\PhpMercureHub\Models\Topic $topic, array $request)
  */
 class UtilsManager
 {

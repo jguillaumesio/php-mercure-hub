@@ -25,8 +25,11 @@ class SubscriptionController
 
     public function getSubscriptionForTopic($topicName, $subscriberId){
         $subscriber = $this->subscriptionManager->getSubscriber($subscriberId);
+        if ($subscriber === null) {
+            return null;
+        }
         $topics = TopicUtils::getMatchingTopics([$topicName], $this->subscriptionManager->getTopics());
-        if(\count($topics) !== 1 || $subscriber === null){
+        if(\count($topics) !== 1){
             return null;
         }
         return $topics[0]->getSubscription($subscriber);
