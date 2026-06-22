@@ -11,13 +11,13 @@ use Jguillaumesio\PhpMercureHub\Config;
  * UtilsInterface). Falls back to Utils.
  *
  * @method static void   setHeader(string $key, string $value, bool $replace = true)
+ * @method static void   setHeaders(array $headers, bool $replace)
  * @method static array  getHeaders()
  * @method static array  getQueryParams()
  * @method static array  getCookies()
- * @method static string getRequestBody()
+ * @method static array  getRequestBody()
  * @method static array  getAvailableResponseTypes()
- * @method static void   setHeaders(array $headers, bool $replace = true)
- * @method static void   generateResponse(string $type, array $data)
+ * @method static mixed  generateResponse(string $topic, array $request)
  */
 class UtilsManager
 {
@@ -34,7 +34,6 @@ class UtilsManager
 
     public static function __callStatic($method, $arguments)
     {
-        $class = self::$class;
-        return $class::{$method}(...$arguments);
+        return self::getInstance()::{$method}(...$arguments);
     }
 }
