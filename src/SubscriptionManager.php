@@ -74,7 +74,8 @@ class SubscriptionManager
             'cookies' => UtilsManager::getCookies()
         ];
         $this->processRequest();
-        $this->hubUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/.well-known/mercure';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $this->hubUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $host . '/.well-known/mercure';
     }
 
     private function processRequest(){
