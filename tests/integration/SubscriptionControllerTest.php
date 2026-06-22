@@ -4,7 +4,6 @@ namespace Jguillaumesio\PhpMercureHub\integration;
 
 use Jguillaumesio\PhpMercureHub\Controllers\SubscriptionController;
 use Jguillaumesio\PhpMercureHub\Models\Topic;
-use Jguillaumesio\PhpMercureHub\Models\Subscriber;
 use Jguillaumesio\PhpMercureHub\SubscriptionManager;
 use PHPUnit\Framework\TestCase;
 
@@ -16,12 +15,21 @@ class SubscriptionControllerTest extends TestCase
     protected function setUp(): void
     {
         $this->manager = SubscriptionManager::getInstance();
+        $this->manager->setTopics([]);
+        $this->manager->setSubscribers([]);
         $this->controller = new SubscriptionController();
+    }
+
+    private function registerSubscriber(string $topicName): array
+    {
+        $topic = new Topic($topicName);
+        $this->manager->setTopics([$topicName => $topic]);
+        $subscriber = $this->manager->subscribe([$topic]);
+        return [$topic, $subscriber];
     }
 
     public function testGetAllSubscriptionsEmpty()
     {
-        $this->manager->setTopics([]);
         $result = $this->controller->getAllSubscriptions();
         $this->assertIsArray($result);
         $this->assertEmpty($result);
@@ -29,9 +37,7 @@ class SubscriptionControllerTest extends TestCase
 
     public function testGetAllSubscriptionsWithData()
     {
-        $topic = new Topic('https://example.com/foo');
-        $subscriber = new Subscriber([$topic]);
-        $this->manager->setTopics(['https://example.com/foo' => $topic]);
+        [$topic, $subscriber] = $this->registerSubscriber('https://example.com/foo');
 
         $result = $this->controller->getAllSubscriptions();
         $this->assertCount(1, $result);
@@ -41,20 +47,17 @@ class SubscriptionControllerTest extends TestCase
 
     public function testGetSubscriptionByTopicSelector()
     {
-        $topic = new Topic('https://example.com/foo');
-        $subscriber = new Subscriber([$topic]);
-        $this->manager->setTopics(['https://example.com/foo' => $topic]);
+        [$topic, $subscriber] = $this->registerSubscriber('https://example.com/foo');
 
         $result = $this->controller->getSubscriptionByTopicSelector('https://example.com/foo');
         $this->assertCount(1, $result);
         $this->assertSame('https://example.com/foo', $result[0]['topic']);
+        $this->assertSame($subscriber->id, $result[0]['subscriber']);
     }
 
     public function testGetSubscriptionForTopic()
     {
-        $topic = new Topic('https://example.com/foo');
-        $subscriber = new Subscriber([$topic]);
-        $this->manager->setTopics(['https://example.com/foo' => $topic]);
+        [$topic, $subscriber] = $this->registerSubscriber('https://example.com/foo');
 
         $result = $this->controller->getSubscriptionForTopic(
             'https://example.com/foo',

@@ -31,6 +31,14 @@ class SubscriptionManager
         $this->topics = $topics;
     }
 
+    public function getSubscribers(): array {
+        return $this->subscribers;
+    }
+
+    public function setSubscribers(array $subscribers): void {
+        $this->subscribers = $subscribers;
+    }
+
     public function addTopic($topicName): Topic{
         if(\array_key_exists($topicName, $this->topics)){
             return $this->topics[$topicName];

@@ -42,7 +42,7 @@ if your router emits them as plain path segments, that's fine.
 ## Running locally
 
 ```
-MERCURE_CONFIG_PATH=$(pwd)/tests/fixtures/config.php \
+MERCURE_CONFIG_PATH=$(pwd)/tests_fixtures/config.php \
     php -S localhost:8080 examples/index.php
 ```
 
