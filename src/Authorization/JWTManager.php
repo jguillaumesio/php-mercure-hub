@@ -28,12 +28,28 @@ class JWTManager {
         return self::$instance;
     }
 
+    private function resolveJWTKeyPath($secret){
+        // Absolute paths are used as-is, relative paths are resolved against getcwd().
+        $path = (strpos($secret, '/') === 0 || preg_match('#^[A-Z]:[\\\\/]#i', $secret))
+            ? $secret
+            : getcwd() . DIRECTORY_SEPARATOR . $secret;
+        return $path;
+    }
+
     private function checkJWTConfigValidity($config){
-        return \array_key_exists('jwt',$config) &&
-            \array_key_exists('algo',$config['jwt']) &&
-            \array_key_exists('secret',$config['jwt']) &&
-            \in_array($config['jwt']['algo'], $this->allowedJWTAlgorithm) &&
-            \file_exists(getcwd() . $config['jwt']['secret']);
+        if(!\array_key_exists('jwt',$config)
+            || !\array_key_exists('algo',$config['jwt'])
+            || !\array_key_exists('secret',$config['jwt'])
+            || !\in_array($config['jwt']['algo'], $this->allowedJWTAlgorithm)){
+            return false;
+        }
+        // For HS* algorithms the "secret" can be either a path to a key file or an
+        // inline raw secret. We accept any non-empty string; HS256 lib will hash it.
+        if(substr($config['jwt']['algo'], 0, 2) === 'HS'){
+            return $config['jwt']['secret'] !== '' && $config['jwt']['secret'] !== null;
+        }
+        // For RS* algorithms the secret must point to a readable key file.
+        return \file_exists($this->resolveJWTKeyPath($config['jwt']['secret']));
     }
 
     private function generateJWT(){
