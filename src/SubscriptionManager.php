@@ -5,8 +5,6 @@ namespace Jguillaumesio\PhpMercureHub;
 use Jguillaumesio\PhpMercureHub\Authorization\AuthorizationManager;
 use Jguillaumesio\PhpMercureHub\Models\Subscriber;
 use Jguillaumesio\PhpMercureHub\Models\Topic;
-use Jguillaumesio\PhpMercureHub\Utils\TopicUtils;
-use Jguillaumesio\PhpMercureHub\Utils\Utils;
 use Jguillaumesio\PhpMercureHub\Utils\UtilsManager;
 
 class SubscriptionManager
@@ -14,6 +12,7 @@ class SubscriptionManager
     private static $instance;
     private $topics = [];
     private $subscribers = [];
+    private $publications = [];
     private $request;
     private $hubUrl;
 
@@ -32,6 +31,15 @@ class SubscriptionManager
         $this->topics = $topics;
     }
 
+    public function addTopic($topicName): Topic{
+        if(\array_key_exists($topicName, $this->topics)){
+            return $this->topics[$topicName];
+        }
+        $topic = new Topic($topicName);
+        $this->topics[$topicName] = $topic;
+        return $topic;
+    }
+
     public function getRequest() {
         return $this->request;
     }
@@ -46,6 +54,17 @@ class SubscriptionManager
 
     public function setHubUrl(string $hubUrl) {
         $this->hubUrl = $hubUrl;
+    }
+
+    public function registerPublication(string $id): void{
+        $this->publications[] = $id;
+    }
+
+    public function getLastPublicationId(): ?string{
+        if(\count($this->publications) === 0){
+            return null;
+        }
+        return end($this->publications);
     }
 
     public function __construct(){
@@ -63,37 +82,31 @@ class SubscriptionManager
         $this->request['language'] = $this->request['headers']['acceptlanguage'] ?? null;
     }
 
-    public function addTopic($topicName){
-        if(\is_array($this->topics)){
-            $topic = new Topic($topicName);
-            if(\array_key_exists($topicName, $this->topics)){
-                throw new \Error('TOPIC_ALREADY_EXISTS');
-            }
-            $this->topics[$topicName] = $topic;
-        }
-    }
-
     public function getSubscriber($id){
-        if (array_key_exists($id, $this->subscribers)) {
+        if (\array_key_exists($id, $this->subscribers)) {
             return $this->subscribers[$id];
         } else {
             return null;
         }
     }
 
-    public function subscribe($selector){
-        $topics = TopicUtils::getMatchingTopics([$selector], $this->topics);
-        if(\count($topics) > 0){
-            $jwtPayload = (new AuthorizationManager())->getJWTPayload($this->request);
-            $subscriber = $this->getSubscriber($jwtPayload['subscriber'] ?? null);
-            if($subscriber === null){
-                $this->subscribers[] = new Subscriber($topics);
-            } else {
-                $subscriber->subscribe($topics);
-            }
-            return true;
+    /**
+     * Register a subscription for the (anonymous or JWT-identified)
+     * subscriber for the topics matching the request topic selectors.
+     */
+    public function subscribe(array $topics): Subscriber{
+        $jwtPayload = (new AuthorizationManager())->getJWTPayload($this->request);
+        $subscriberId = (is_array($jwtPayload) && isset($jwtPayload['sub'])) ? $jwtPayload['sub'] : null;
+
+        if($subscriberId !== null && $this->getSubscriber($subscriberId) !== null){
+            $subscriber = $this->getSubscriber($subscriberId);
+        } else {
+            $subscriber = new Subscriber($topics);
+            // Stable key required so getSubscriber($id) can resolve later.
+            $this->subscribers[$subscriber->id] = $subscriber;
         }
-        return false;
+        $subscriber->subscribe($topics);
+        return $subscriber;
     }
 
     private function setResponseTypeHeader(){
@@ -107,10 +120,16 @@ class SubscriptionManager
     }
 
     private function setLinkHeaders($topics, $includeSelf = true){
+        if(!is_array($topics)){
+            $topics = [$topics];
+        }
         $headers = [
             ['key' => 'Link', 'value' => "<$this->hubUrl>; rel=\"mercure\""]
         ];
         foreach ($topics as $topic){
+            if(!is_object($topic) || !isset($topic->name)){
+                continue;
+            }
             if($includeSelf){
                 $headers[] = ['key' => 'Link', 'value' => '<' . $topic->name . ($this->request['language'] !== null ? '-'.$this->request['language'] : '') . '.' . $this->request['response_type'] . '>; rel="self"'];
             }
@@ -124,7 +143,7 @@ class SubscriptionManager
     }
 
     public function setPublicationHeaders($topic){
-        $this->setLinkHeaders($topic);
+        $this->setLinkHeaders([$topic]);
         $this->setResponseTypeHeader();
     }
 }

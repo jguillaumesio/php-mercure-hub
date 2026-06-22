@@ -53,6 +53,47 @@ class Utils extends AbstractUtils implements UtilsInterface {
     }
 
     public static function getCookies(){
-        return $_SERVER['HTTP_COOKIE'];
+        $out = [];
+        if(!isset($_SERVER['HTTP_COOKIE']) || $_SERVER['HTTP_COOKIE'] === ''){
+            return $out;
+        }
+        foreach (explode(';', $_SERVER['HTTP_COOKIE']) as $pair) {
+            $pair = trim($pair);
+            if($pair === ''){
+                continue;
+            }
+            list($name, $value) = array_pad(explode('=', $pair, 2), 2, null);
+            $out[urldecode($name)] = urldecode($value);
+        }
+        return $out;
+    }
+
+    /**
+     * Parse application/x-www-form-urlencoded request bodies.
+     * Supports repeated keys (returned as array values).
+     */
+    public static function getRequestBody(){
+        $body = [];
+        $raw = file_get_contents('php://input');
+        if($raw === false || $raw === ''){
+            return $body;
+        }
+        foreach (explode('&', $raw) as $pair) {
+            if($pair === ''){
+                continue;
+            }
+            list($name, $value) = array_pad(explode('=', $pair, 2), 2, null);
+            $name = urldecode($name);
+            $value = urldecode($value);
+            if (\array_key_exists($name, $body)) {
+                if (!\is_array($body[$name])) {
+                    $body[$name] = [$body[$name]];
+                }
+                $body[$name][] = $value;
+            } else {
+                $body[$name] = $value;
+            }
+        }
+        return $body;
     }
 }

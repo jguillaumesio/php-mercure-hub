@@ -3,6 +3,7 @@
 namespace Jguillaumesio\PhpMercureHub\Controllers;
 
 use Jguillaumesio\PhpMercureHub\Authorization\AuthorizationManager;
+use Jguillaumesio\PhpMercureHub\Models\Publication;
 use Jguillaumesio\PhpMercureHub\SubscriptionManager;
 use Jguillaumesio\PhpMercureHub\Utils\TopicUtils;
 use Jguillaumesio\PhpMercureHub\Utils\UtilsManager;
@@ -17,42 +18,77 @@ class HubController {
         $this->authManager = AuthorizationManager::getInstance();
     }
 
+    /**
+     * POST /.well-known/mercure
+     * Handles the publication of an update by an authorized publisher.
+     */
     public function publication(){
         $request = $this->subscriptionManager->getRequest();
         $headers = $request['headers'];
         if(!\is_array($headers) || !\array_key_exists('contenttype', $headers) || $headers['contenttype'] !== 'application/x-www-form-urlencoded'){
             throw new \Error('INVALID_CONTENT_TYPE');
         }
+
+        $body = UtilsManager::getRequestBody();
+        $topics = isset($body['topic']) ? (array) $body['topic'] : [];
+        if(\count($topics) === 0){
+            throw new \Error('INVALID_OR_MISSING_TOPIC');
+        }
+
         $jwtPayload = $this->authManager->getJWTPayload($request);
         if($jwtPayload === null){
             throw new \Error('INVALID_OR_MISSING_AUTHORIZATION');
         }
-        if(
-            !\array_key_exists('mercure', $jwtPayload) ||
-            !\array_key_exists('publish', $jwtPayload['mercure']) ||
-            !\is_array($jwtPayload['mercure']['publish'])
-        ){
+        $mercureClaim = $jwtPayload['mercure'] ?? null;
+        $publishSelectors = $mercureClaim['publish'] ?? null;
+        if(!\is_array($publishSelectors)){
             throw new \Error('INVALID_OR_MISSING_AUTHORIZATION');
         }
-        if(\count(\array_diff($topics, $jwtPayload['mercure']['publish'])) === 0 && \count(\array_diff($jwtPayload['mercure']['publish'], $topics)) === 0){
-            throw new \Error('MISSING_TOPIC_AUTHORIZATION');
+
+        // Authorization: every POSTed topic must be covered by at least one
+        // selector from the publish claim (URI template matching per RFC 6570).
+        foreach($topics as $topic){
+            if(!TopicUtils::isAuthorized($topic, $publishSelectors)){
+                throw new \Error('MISSING_TOPIC_AUTHORIZATION');
+            }
         }
 
+        // The registered Topic model objects are looked up by IRI so the
+        // dispatched Publication can be attached to them. Create a stub Topic
+        // wrapper around each post body item to satisfy the model contract.
+        $private = !empty($body['private']);
+        $id = $body['id'] ?? null;
+        $type = $body['type'] ?? null;
+        $retry = isset($body['retry']) ? (int) $body['retry'] : null;
+        $data = $body['data'] ?? null;
+
+        foreach($topics as $topicIri){
+            $topic = TopicUtils::ensureTopic($topicIri, $this->subscriptionManager);
+            new Publication(
+                $topic,
+                $data,
+                $private,
+                $id,
+                $type,
+                $retry
+            );
+        }
+
+        UtilsManager::setHeader('Content-type', 'text/plain');
+        echo $this->subscriptionManager->getLastPublicationId();
     }
 
     public function subscription(){
-        extract($_GET);
-        if(isset($id) && $id[0] === '#'){
-            throw new \Error('INVALID_ID');
-        }
-        //check content type
-        //TODO retrieve topics
         $request = $this->subscriptionManager->getRequest();
-        $selectors = !\array_key_exists('topic', $request['query_params']) ? [] : $request['query_params']['topic'];
+        $selectors = !\array_key_exists('topic', $request['query_params']) ? [] : (array) $request['query_params']['topic'];
+        if(\count($selectors) === 0){
+            throw new \Error('INVALID_OR_MISSING_TOPIC');
+        }
         $topics = TopicUtils::getMatchingTopics($selectors, $this->subscriptionManager->getTopics());
         if(\count($topics) === 0){
             throw new \Error('INVALID_OR_MISSING_TOPIC');
         }
+        $this->subscriptionManager->subscribe($topics);
         $this->subscriptionManager->setSubscriptionHeaders($topics);
     }
 

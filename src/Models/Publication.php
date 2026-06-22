@@ -13,7 +13,7 @@ class Publication {
     private $type;
     private $retry;
 
-    public function __construct($topic, $data = null, $private = null, $id = null, $type = null, $retry = false){
+    public function __construct($topic, $data = null, $private = null, $id = null, $type = null, $retry = null){
         $id = ($id === null || !$this->isIdValid($id)) ? Uuid::uuid4() : $id;
         $this->topic = $topic;
         $this->id = $id;

@@ -10,9 +10,9 @@ class CookiesAuthorization extends AbstractAuthorization implements Authorizatio
     public function getJWT($request)
     {
         $config = Config::getConfig();
-       if(!\array_key_exists('auth_cookie_name', $config) || !\array_key_exists('cookie', $request) || !array_key_exists($config['auth_cookie_name'], $request['cookie'])){
+       if(!\array_key_exists('auth_cookie_name', $config) || !\array_key_exists('cookies', $request) || !\array_key_exists($config['auth_cookie_name'], $request['cookies'])){
            return $this->next($request);
        }
-       return $request['cookie'][$config['auth_cookie_name']];
+       return $request['cookies'][$config['auth_cookie_name']];
     }
 }

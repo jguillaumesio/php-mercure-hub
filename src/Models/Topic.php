@@ -21,6 +21,7 @@ class Topic
 
     public function addPublication($publication){
         $this->publications[] = $publication;
+        \Jguillaumesio\PhpMercureHub\SubscriptionManager::getInstance()->registerPublication($publication->id);
     }
 
     public function subscribe($subscriber = null){
