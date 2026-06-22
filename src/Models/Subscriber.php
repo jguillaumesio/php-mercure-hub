@@ -10,7 +10,7 @@ class Subscriber {
     private $subscribedTopics = [];
 
     public function __construct($topics){
-        $this->id = Uuid::uuid4();
+        $this->id = Uuid::uuid4()->toString();
         $this->subscribe($topics);
     }
 

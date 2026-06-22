@@ -34,7 +34,7 @@ class Topic
         if(\in_array($subscriber, $this->subscribers, true)){
             return [
                 'topic' => $this->name,
-                'subscriber' => $subscriber
+                'subscriber' => $subscriber->id
             ];
         }
         return null;
