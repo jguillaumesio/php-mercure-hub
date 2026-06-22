@@ -28,9 +28,6 @@ class HubController {
         }
 
         $body = UtilsManager::getRequestBody();
-        if (!\is_array($body)) {
-            throw new \Error('INVALID_CONTENT_TYPE');
-        }
         $topics = isset($body['topic']) ? (array) $body['topic'] : [];
         if(\count($topics) === 0){
             throw new \Error('INVALID_OR_MISSING_TOPIC');
