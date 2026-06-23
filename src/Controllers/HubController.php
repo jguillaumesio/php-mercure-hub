@@ -60,17 +60,23 @@ class HubController {
         $retry = isset($body['retry']) ? (int) $body['retry'] : null;
         $data = $body['data'] ?? null;
 
-        foreach($topics as $topicIri){
-            $topic = TopicUtils::ensureTopic($topicIri, $this->subscriptionManager);
-            new Publication(
-                $topic,
-                $data,
-                $private,
-                $id,
-                $type,
-                $retry
-            );
-        }
+        // First topic IRI is canonical, remaining are alternates per Mercure spec.
+        $canonicalIri = $topics[0];
+        $alternateIris = array_slice($topics, 1);
+        $canonicalTopic = TopicUtils::ensureTopic($canonicalIri, $this->subscriptionManager);
+        $alternateTopics = array_map(
+            fn($iri) => TopicUtils::ensureTopic($iri, $this->subscriptionManager),
+            $alternateIris
+        );
+        new Publication(
+            $canonicalTopic,
+            $data,
+            $private,
+            $id,
+            $type,
+            $retry,
+            $alternateTopics
+        );
 
         UtilsManager::setHeader('Content-type', 'text/plain');
         echo $this->subscriptionManager->getLastPublicationId();
