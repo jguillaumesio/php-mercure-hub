@@ -1,12 +1,10 @@
-# :warning: Warning
+# php-mercure-hub
 
-**This project is still under development and is not usable yet, feel free to make
-pull requests or to contact me for any further questions !**
+A framework-agnostic PHP hub for the [Mercure protocol](https://mercure.rocks/spec).
 
-# TODO
-
-* Add config file checker
-* Only store useful headers in Subscription manager request attribute
+Implements: SSE streaming, Last-Event-ID reconciliation, JWT `exp` enforcement,
+private-update filtering, CSRF Origin/Referer check, JSON-LD subscription API,
+canonical + alternate topic IRIs, and discovery.
 
 # Get started
 ## PHP Extensions
