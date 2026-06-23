@@ -28,6 +28,19 @@ class HubController {
             throw new \Error('INVALID_CONTENT_TYPE');
         }
 
+        // CSRF mitigation: when the request has an Origin or Referer header,
+        // verify it matches our host. This blocks cross-origin form POSTs
+        // from other domains (Mercure RFC Security Considerations).
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $origin = $headers['origin'] ?? null;
+        $referer = $headers['referer'] ?? null;
+        if ($origin !== null && parse_url($origin, PHP_URL_HOST) !== $host) {
+            throw new \Error('INVALID_OR_MISSING_AUTHORIZATION');
+        }
+        if ($origin === null && $referer !== null && parse_url($referer, PHP_URL_HOST) !== $host) {
+            throw new \Error('INVALID_OR_MISSING_AUTHORIZATION');
+        }
+
         $body = UtilsManager::getRequestBody();
         $topics = isset($body['topic']) ? (array) $body['topic'] : [];
         if(\count($topics) === 0){
