@@ -28,6 +28,8 @@ class Publication
         foreach ($alternateTopics as $alt) {
             $alt->addPublication($this);
         }
+        \Jguillaumesio\PhpMercureHub\SubscriptionManager::getInstance()
+            ->addEventToHistory((string) $id, $this);
     }
 
     public function getId()
