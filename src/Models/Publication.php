@@ -7,13 +7,14 @@ use Ramsey\Uuid\Uuid;
 class Publication
 {
     private $topic;
+    private $alternateTopics = [];
     private $data;
     private $private;
     private $id;
     private $type;
     private $retry;
 
-    public function __construct($topic, $data = null, $private = null, $id = null, $type = null, $retry = null)
+    public function __construct($topic, $data = null, $private = null, $id = null, $type = null, $retry = null, array $alternateTopics = [])
     {
         $id = ($id === null || !$this->isIdValid($id)) ? Uuid::uuid4() : $id;
         $this->topic = $topic;
@@ -22,7 +23,11 @@ class Publication
         $this->retry = $retry;
         $this->private = $private;
         $this->data = $data;
+        $this->alternateTopics = $alternateTopics;
         $topic->addPublication($this);
+        foreach ($alternateTopics as $alt) {
+            $alt->addPublication($this);
+        }
     }
 
     public function getId()
@@ -53,6 +58,19 @@ class Publication
     public function getTopic()
     {
         return $this->topic;
+    }
+
+    public function getAlternateTopics()
+    {
+        return $this->alternateTopics;
+    }
+
+    /**
+     * Return canonical topic + all alternate topics.
+     */
+    public function getAllTopics(): array
+    {
+        return array_merge([$this->topic], $this->alternateTopics);
     }
 
     private function isIdValid($id)
