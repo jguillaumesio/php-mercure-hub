@@ -15,12 +15,34 @@ class SubscriptionController
     }
 
     public function getAllSubscriptions(){
-        return \array_reduce($this->subscriptionManager->getTopics(), fn($acc, $topic) => [...$acc, ...$topic->getSubscriptions()], []);
+        $subscriptions = \array_reduce(
+            $this->subscriptionManager->getTopics(),
+            fn($acc, $topic) => [...$acc, ...$topic->getSubscriptions()],
+            []
+        );
+        return [
+            '@context' => 'https://mercure.rocks/',
+            'id' => '/.well-known/mercure/subscriptions',
+            'type' => 'Subscriptions',
+            'lastEventID' => $this->subscriptionManager->getLastEventID() ?? 'earliest',
+            'subscriptions' => $subscriptions,
+        ];
     }
 
     public function getSubscriptionByTopicSelector($selector){
         $topics = TopicUtils::getMatchingTopics([$selector], $this->subscriptionManager->getTopics());
-        return \array_reduce($topics, fn($acc, $topic) => [...$acc, ...$topic->getSubscriptions()], []);
+        $subscriptions = \array_reduce(
+            $topics,
+            fn($acc, $topic) => [...$acc, ...$topic->getSubscriptions()],
+            []
+        );
+        return [
+            '@context' => 'https://mercure.rocks/',
+            'id' => '/.well-known/mercure/subscriptions/' . rawurlencode($selector),
+            'type' => 'Subscriptions',
+            'lastEventID' => $this->subscriptionManager->getLastEventID() ?? 'earliest',
+            'subscriptions' => $subscriptions,
+        ];
     }
 
     public function getSubscriptionForTopic($topicName, $subscriberId){
@@ -32,6 +54,18 @@ class SubscriptionController
         if(\count($topics) !== 1){
             return null;
         }
-        return $topics[0]->getSubscription($subscriber);
+        $sub = $topics[0]->getSubscription($subscriber);
+        if ($sub === null) {
+            return null;
+        }
+        return [
+            '@context' => 'https://mercure.rocks/',
+            'id' => '/.well-known/mercure/subscriptions/' . rawurlencode($topicName) . '/' . rawurlencode($subscriberId),
+            'type' => 'Subscription',
+            'topic' => $sub['topic'],
+            'subscriber' => $sub['subscriber'],
+            'active' => true,
+            'lastEventID' => $this->subscriptionManager->getLastEventID() ?? 'earliest',
+        ];
     }
 }
