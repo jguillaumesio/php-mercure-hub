@@ -13,6 +13,8 @@ class SubscriptionManager
     private $topics = [];
     private $subscribers = [];
     private $publications = [];
+    private $eventHistory = [];
+    private $maxHistorySize = 100;
     private $request;
     private $hubUrl;
 
@@ -73,6 +75,63 @@ class SubscriptionManager
             return null;
         }
         return end($this->publications);
+    }
+
+    public function getMaxHistorySize(): int
+    {
+        return $this->maxHistorySize;
+    }
+
+    public function setMaxHistorySize(int $size): void
+    {
+        $this->maxHistorySize = max(0, $size);
+    }
+
+    /**
+     * Record a publication in the event history. If the history exceeds
+     * maxHistorySize, the oldest entry is evicted (FIFO).
+     */
+    public function addEventToHistory(string $eventId, \Jguillaumesio\PhpMercureHub\Models\Publication $publication): void
+    {
+        $this->eventHistory[$eventId] = $publication;
+        while (\count($this->eventHistory) > $this->maxHistorySize) {
+            array_shift($this->eventHistory);
+        }
+    }
+
+    /**
+     * Return events published strictly after the given event ID.
+     * If $lastEventId is null or 'earliest', return all events.
+     *
+     * @return \Jguillaumesio\PhpMercureHub\Models\Publication[]
+     */
+    public function getEventsAfter(?string $lastEventId): array
+    {
+        if ($lastEventId === null || $lastEventId === 'earliest') {
+            return array_values($this->eventHistory);
+        }
+        $result = [];
+        $found = false;
+        foreach ($this->eventHistory as $id => $pub) {
+            if ($found) {
+                $result[] = $pub;
+            }
+            if ($id === $lastEventId) {
+                $found = true;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Identifier of the last published event, or null if none yet.
+     */
+    public function getLastEventID(): ?string
+    {
+        if (empty($this->eventHistory)) {
+            return null;
+        }
+        return array_key_last($this->eventHistory);
     }
 
     public function __construct(){
