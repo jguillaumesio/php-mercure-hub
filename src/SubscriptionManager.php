@@ -161,10 +161,17 @@ class SubscriptionManager
     /**
      * Register a subscription for the (anonymous or JWT-identified)
      * subscriber for the topics matching the request topic selectors.
+     *
+     * When $explicitSubscriberId is provided (e.g. from a JWT sub claim
+     * resolved upstream) it takes precedence over re-reading the JWT here,
+     * which lets the caller control identity across reconnections.
      */
-    public function subscribe(array $topics): Subscriber{
-        $jwtPayload = (new AuthorizationManager())->getJWTPayload($this->request);
-        $subscriberId = (is_array($jwtPayload) && isset($jwtPayload['sub'])) ? $jwtPayload['sub'] : null;
+    public function subscribe(array $topics, ?string $explicitSubscriberId = null): Subscriber{
+        $subscriberId = $explicitSubscriberId;
+        if ($subscriberId === null) {
+            $jwtPayload = (new AuthorizationManager())->getJWTPayload($this->request);
+            $subscriberId = (is_array($jwtPayload) && isset($jwtPayload['sub'])) ? $jwtPayload['sub'] : null;
+        }
 
         if($subscriberId !== null && $this->getSubscriber($subscriberId) !== null){
             $subscriber = $this->getSubscriber($subscriberId);
