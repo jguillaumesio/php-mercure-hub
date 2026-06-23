@@ -14,7 +14,7 @@
     ],
     "require": {
         "rize/uri-template": "^0.3.5",
-        "ramsey/uuid": "^4.7",
+        "ramsey/uuid": "^4.0",
         "adhocore/jwt": "^1.1",
         "ext-openssl": "*",
         "ext-json": "*"
