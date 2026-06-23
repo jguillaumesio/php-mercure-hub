@@ -32,7 +32,8 @@ class SubscriptionControllerTest extends TestCase
     {
         $result = $this->controller->getAllSubscriptions();
         $this->assertIsArray($result);
-        $this->assertEmpty($result);
+        $this->assertSame('Subscriptions', $result['type']);
+        $this->assertEmpty($result['subscriptions']);
     }
 
     public function testGetAllSubscriptionsWithData()
@@ -40,9 +41,9 @@ class SubscriptionControllerTest extends TestCase
         [$topic, $subscriber] = $this->registerSubscriber('https://example.com/foo');
 
         $result = $this->controller->getAllSubscriptions();
-        $this->assertCount(1, $result);
-        $this->assertSame('https://example.com/foo', $result[0]['topic']);
-        $this->assertSame($subscriber->id, $result[0]['subscriber']);
+        $this->assertCount(1, $result['subscriptions']);
+        $this->assertSame('https://example.com/foo', $result['subscriptions'][0]['topic']);
+        $this->assertSame($subscriber->id, $result['subscriptions'][0]['subscriber']);
     }
 
     public function testGetSubscriptionByTopicSelector()
@@ -50,9 +51,9 @@ class SubscriptionControllerTest extends TestCase
         [$topic, $subscriber] = $this->registerSubscriber('https://example.com/foo');
 
         $result = $this->controller->getSubscriptionByTopicSelector('https://example.com/foo');
-        $this->assertCount(1, $result);
-        $this->assertSame('https://example.com/foo', $result[0]['topic']);
-        $this->assertSame($subscriber->id, $result[0]['subscriber']);
+        $this->assertCount(1, $result['subscriptions']);
+        $this->assertSame('https://example.com/foo', $result['subscriptions'][0]['topic']);
+        $this->assertSame($subscriber->id, $result['subscriptions'][0]['subscriber']);
     }
 
     public function testGetSubscriptionForTopic()
