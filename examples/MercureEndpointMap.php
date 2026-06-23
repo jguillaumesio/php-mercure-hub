@@ -70,6 +70,10 @@ final class MercureEndpointMap
                     $params['subscriber']
                 );
             },
+
+            'discovery' => static function (): void {
+                (new HubController())->discovery();
+            },
         ];
     }
 }

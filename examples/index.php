@@ -35,8 +35,9 @@ $router->get('/.well-known/mercure/subscriptions', $json($map['subscriptionsAll'
 $router->get('/.well-known/mercure/subscriptions/{topic}', $json($map['subscriptionsByTopic']));
 $router->get('/.well-known/mercure/subscriptions/{topic}/{subscriber}', $json($map['subscriptionDetail']));
 
-// SSE + publish — handlers emit headers and write to output themselves
+// SSE + publish + discovery — handlers emit headers and write to output themselves
 $router->get('/.well-known/mercure', $map['subscription']);
+$router->get('/.well-known/mercure/discovery', $map['discovery']);
 $router->post('/.well-known/mercure', $map['publish']);
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
